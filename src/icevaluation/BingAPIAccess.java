@@ -57,12 +57,12 @@ public class BingAPIAccess {
         
         //Print server response and append to string sb
         String output;
+        int c = 0;
         System.out.println("Output from Server .... \n");
-        
-        //write json to string sb
         if ((output = br.readLine()) != null) {
         System.out.println("Output is: "+output);
         sb.append(output);
+        c++;
         }
         
         //Close connection. We got what we need :D
@@ -81,10 +81,10 @@ public class BingAPIAccess {
         //Write results to result.txt. Create file if not exists.
         try{
         File f = new File("./data/output.txt");
-        if(!f.exists()) {
+        if(!f.exists()) {    
             f.createNewFile();
         } 
-        FileOutputStream out = new FileOutputStream(f,false);
+        FileOutputStream out = new FileOutputStream(f,true);
         OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
         BufferedWriter bf = new BufferedWriter(ostream);
         
@@ -94,13 +94,17 @@ public class BingAPIAccess {
         } catch(IOException e){
             e.printStackTrace();
         }
-              
+          
+        String count = Integer.toString(c);
+        System.out.println(count + " query successfully processed");
+           
         //These catches are for API connection
         } catch (MalformedURLException e1) {
             e1.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }   
+        
 
      }
    
@@ -111,10 +115,16 @@ public class BingAPIAccess {
         InputStreamReader istream = new InputStreamReader(in,"utf-8");
         BufferedReader bfr = new BufferedReader(istream);
         String line;
+        int c = 0;
         while((line = bfr.readLine())!= null){
             processQuery(line);
+            c++;
         }
         bfr.close();
+        
+        String result = Integer.toString(c);
+        System.out.println("A total of "+ result + " queries have been processed");
+            
         } catch(IOException e) {
             e.printStackTrace();
         }
