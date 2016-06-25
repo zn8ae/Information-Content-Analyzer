@@ -31,11 +31,12 @@ import org.apache.commons.codec.binary.Base64;
 public class BingAPIAccess {
     
     
-     public static void processQuery(String query){
+     public static String processQuery(String query){
         
         //Encrypt content to URL format     
         String searchText = query; 
-        searchText = searchText.replaceAll(" ", "%20");   
+        searchText = searchText.replaceAll(" ", "%20"); 
+        String numResults = "";
  
         //Encrypt accountKey for API
         String accountKey = "dh8dWClCMuTDF++o8urdm359v6xDgkQayQQyHiH2lE0";
@@ -76,25 +77,8 @@ public class BingAPIAccess {
         int lastindex = sb.indexOf("\",\"WebOffset\""); //find the last index of number
 
         //Get the String of number we need 
-        String numResults = sb.substring(startindex,lastindex);
-        
-        //Write results to result.txt. Create file if not exists.
-        try{
-        File f = new File("./data/output.txt");
-        if(!f.exists()) {    
-            f.createNewFile();
-        } 
-        FileOutputStream out = new FileOutputStream(f,true);
-        OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
-        BufferedWriter bf = new BufferedWriter(ostream);
-        
-        bf.write(searchText + " " + numResults);
-        bf.newLine();
-        bf.close();
-        } catch(IOException e){
-            e.printStackTrace();
-        }
-          
+        numResults = sb.substring(startindex,lastindex);
+         
         String count = Integer.toString(c);
         System.out.println(count + " query successfully processed");
            
@@ -105,22 +89,39 @@ public class BingAPIAccess {
             e.printStackTrace();
         }   
         
-
+        return (searchText + " " + numResults);
      }
    
      public static void main(String[] args) {
         
+        //Create file reader
         try{
         FileInputStream in = new FileInputStream("./data/input.txt");
         InputStreamReader istream = new InputStreamReader(in,"utf-8");
         BufferedReader bfr = new BufferedReader(istream);
         String line;
         int c = 0;
+        
+        //Write results to result.txt. Create file if not exists.
+        File f = new File("./data/output.txt");
+        if(!f.exists()) {    
+            f.createNewFile();
+        } 
+        
+        FileOutputStream out = new FileOutputStream(f);
+        OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
+        BufferedWriter bfw = new BufferedWriter(ostream);      
+        
         while((line = bfr.readLine())!= null){
-            processQuery(line);
+            String result = processQuery(line);
+            bfw.write(result);
+            bfw.newLine();
             c++;
         }
+      
+        bfw.close();
         bfr.close();
+        
         
         String result = Integer.toString(c);
         System.out.println("A total of "+ result + " queries have been processed");
