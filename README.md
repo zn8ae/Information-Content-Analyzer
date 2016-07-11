@@ -1,9 +1,18 @@
 # Information-Content-Analyzer 
 Information Content Analyzer build on Bing's search API 
 
-##Current progress
+Input: 
 
-Given an input.txt file containing queries in the form of 1 query string per line.
+original.txt file containing original queries in the form of 1 query string per line.
 
-Generate output.txt file containing each queries search total results number.
+cover.txt file containing original queries in the form of 1 query string per line.
+
+Output:
+
+oHits.txt, cHits.txt containing the hits.
+
+Rate containing the IC rate.
+
+The program will automatically keep the counting of API usage and switch APIkey.
+
 
