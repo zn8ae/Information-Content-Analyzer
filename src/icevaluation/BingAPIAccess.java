@@ -14,14 +14,18 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Base64;
 
 /**
@@ -31,15 +35,16 @@ import org.apache.commons.codec.binary.Base64;
 public class BingAPIAccess {
     
     
-     public static String processQuery(String query){
+     public static String processQuery(String query, String key){
         
         //Encrypt content to URL format     
         String searchText = query; 
         searchText = searchText.replaceAll(" ", "%20"); 
         String numResults = "";
- 
+        
+        
         //Encrypt accountKey for API
-        String accountKey = "dh8dWClCMuTDF++o8urdm359v6xDgkQayQQyHiH2lE0";
+        String accountKey = key;
         byte[] accountKeyBytes = Base64.encodeBase64((accountKey + ":" + accountKey).getBytes());
         String accountKeyEnc = new String(accountKeyBytes);
         URL url;
@@ -92,9 +97,23 @@ public class BingAPIAccess {
         return (numResults);
      }
      
-     public static void processFile(String input, String output){
+     public static void processFile(String input, String output) throws FileNotFoundException, UnsupportedEncodingException, IOException{
         
-        //Create file reader
+        //Initiate key and count
+        ArrayList<String[]> dict= new ArrayList<>();
+        String[] lineContent;
+        FileInputStream kinput = new FileInputStream("./data/keys.txt");
+        InputStreamReader kstream = new InputStreamReader(kinput,"utf-8");
+        BufferedReader bfk = new BufferedReader(kstream);
+        String kentry;
+        while((kentry = bfk.readLine())!= null){
+            lineContent = kentry.split(" ");    //Input the key and count into local dictionary
+            dict.add(lineContent);
+        }
+        bfk.close();
+        //now you have a dict of key - count pairs ready to deploy
+        
+        //Create file reader to read input queries
         try{
         FileInputStream in = new FileInputStream(input);
         InputStreamReader istream = new InputStreamReader(in,"utf-8");
@@ -102,8 +121,7 @@ public class BingAPIAccess {
         String line;
         int c = 0;
         
-        
-        //Write results to result.txt. Create file if not exists.
+        //Create output file if not exists.
         File f = new File(output);
         if(!f.exists()) {    
             f.createNewFile();
@@ -113,8 +131,35 @@ public class BingAPIAccess {
         OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
         BufferedWriter bfw = new BufferedWriter(ostream);      
         
+        //process queries line by line
         while((line = bfr.readLine())!= null){
-            String result = processQuery(line);
+            //find a key to use
+            String key="";
+            //get a usable key
+            
+            int i = 0; //counter to traverse keys dict
+            while(i<dict.size()){
+                //find an available key for this query
+                String[] entry = dict.get(i);
+                if(Integer.parseInt(entry[1])<5000){
+                    //Use the key 
+                    System.out.println(entry[0]+" "+entry[1]+" is in use");
+                    key = entry[0];
+                    //update the count in dict
+                    int newvalue = Integer.parseInt(entry[1]);
+                    newvalue --;
+                    entry[1] = Integer.toString(newvalue);
+                    break; //break out while loop
+                } else {
+                     i++; //This key is used up. go to next key.
+                }
+             }          
+            //use the key to process the query
+            if(key.equals(""))
+                System.out.println("no key usable");
+            
+            //process query and update count for processed queries
+            String result = processQuery(line, key);
             bfw.write(result);
             bfw.newLine();
             c++;
@@ -126,7 +171,19 @@ public class BingAPIAccess {
         
         String result = Integer.toString(c);
         System.out.println("A total of "+ result + " queries have been processed");
-            
+        
+        //write back keys and counts
+        FileOutputStream kout = new FileOutputStream("./data/keys.txt");
+        OutputStreamWriter kostream = new OutputStreamWriter(kout,"utf-8");
+        BufferedWriter bfko = new BufferedWriter(kostream);
+        
+        for(String[] entry:dict){
+            //Write the updated results to file
+            bfko.write(entry[0] + " " + entry[1]);
+            bfko.newLine();
+        }
+        bfko.close();
+        
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -193,9 +250,15 @@ public class BingAPIAccess {
      
    
      public static void main(String[] args) {
-         processFile("./data/original.txt","./data/oHits.txt");
-         processFile("./data/cover.txt","./data/cHits.txt");
-         calcRate("./data/oHits.txt","./data/cHits.txt");
+         try {
+             processFile("./data/original.txt","./data/oHits.txt");
+             processFile("./data/cover.txt","./data/cHits.txt");
+             calcRate("./data/oHits.txt","./data/cHits.txt");
+         } catch (UnsupportedEncodingException ex) {
+             Logger.getLogger(BingAPIAccess.class.getName()).log(Level.SEVERE, null, ex);
+         } catch (IOException ex) {
+             Logger.getLogger(BingAPIAccess.class.getName()).log(Level.SEVERE, null, ex);
+         }
      }
      
 }
