@@ -208,7 +208,7 @@ public class BingAPIAccess {
         int c = 0;
         
         //Write results to result.txt. Create file if not exists.
-        File f = new File("./data/Rate.txt");
+        File f = new File("./result/Rate.txt");
         if(!f.exists()) {    
             f.createNewFile();
         } 
@@ -239,7 +239,7 @@ public class BingAPIAccess {
         
         
         String result = Integer.toString(c);
-        System.out.println("A total of "+ result + " lines have been processed");
+        System.out.println("A total of "+ result + " rates have been processed");
             
         } catch(IOException e) {
             e.printStackTrace();
@@ -251,9 +251,9 @@ public class BingAPIAccess {
    
      public static void main(String[] args) {
          try {
-             processFile("./data/original.txt","./data/oHits.txt");
-             processFile("./data/cover.txt","./data/cHits.txt");
-             calcRate("./data/oHits.txt","./data/cHits.txt");
+             processFile("./data/original.txt","./result/oHits.txt");
+             processFile("./data/cover.txt","./result/cHits.txt");
+             calcRate("./result/oHits.txt","./result/cHits.txt");
          } catch (UnsupportedEncodingException ex) {
              Logger.getLogger(BingAPIAccess.class.getName()).log(Level.SEVERE, null, ex);
          } catch (IOException ex) {
