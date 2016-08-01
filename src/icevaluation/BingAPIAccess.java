@@ -64,9 +64,7 @@ public class BingAPIAccess {
         //Print server response and append to string sb
         String output;
         int c = 0;
-        System.out.println("Output from Server .... \n");
-        if ((output = br.readLine()) != null) {
-        System.out.println("Output is: "+output);
+        if ((output = br.readLine()) != null) {  
         sb.append(output);
         c++;
         }
@@ -208,7 +206,7 @@ public class BingAPIAccess {
         int c = 0;
         
         //Write results to result.txt. Create file if not exists.
-        File f = new File("./result/Rate.txt");
+        File f = new File("./result/ic/Rate.txt");
         if(!f.exists()) {    
             f.createNewFile();
         } 
@@ -251,9 +249,9 @@ public class BingAPIAccess {
    
      public static void main(String[] args) {
          try {
-             processFile("./data/original.txt","./result/oHits.txt");
-             processFile("./data/cover.txt","./result/cHits.txt");
-             calcRate("./result/oHits.txt","./result/cHits.txt");
+             processFile("./data/original.txt","./result/ic/oHits.txt");
+             processFile("./data/cover.txt","./result/ic/cHits.txt");
+             calcRate("./result/ic/oHits.txt","./result/ic/cHits.txt");
          } catch (UnsupportedEncodingException ex) {
              Logger.getLogger(BingAPIAccess.class.getName()).log(Level.SEVERE, null, ex);
          } catch (IOException ex) {
