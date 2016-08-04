@@ -18,6 +18,9 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -30,6 +33,8 @@ import org.apache.http.util.EntityUtils;
 
 public class WebLanguageModel {
    
+    private static HashMap<String, Double> dict = new HashMap<>();    
+       
     public static String getJointProbability(String sentence,String apikey) 
     {
         HttpClient httpclient = HttpClients.createDefault();
@@ -85,159 +90,128 @@ public class WebLanguageModel {
         }
       return value;
     }
-    
-    public static void processFile(String input, String output) throws FileNotFoundException, UnsupportedEncodingException, IOException{
-        
-        //Initiate key and count
-        ArrayList<String[]> dict= new ArrayList<>();
+   
+
+     public static void processQueries(String location) throws FileNotFoundException, UnsupportedEncodingException, IOException{
+         
         String[] lineContent;
-        FileInputStream kinput = new FileInputStream("./data/ngramKeys.txt");
-        InputStreamReader kstream = new InputStreamReader(kinput,"utf-8");
-        BufferedReader bfk = new BufferedReader(kstream);
-        String kentry;
-        while((kentry = bfk.readLine())!= null){
-            lineContent = kentry.split(" ");    //Input the key and count into local dictionary
-            dict.add(lineContent);
-        }
-        bfk.close();
-        //now you have a dict of key - count pairs ready to deploy
-        
-        //Create file reader to read input queries
-        try{
-        FileInputStream in = new FileInputStream(input);
+        FileInputStream in = new FileInputStream(location);
         InputStreamReader istream = new InputStreamReader(in,"utf-8");
         BufferedReader bfr = new BufferedReader(istream);
+        
+        //writer 1 to output original query
+        FileOutputStream out1 = new FileOutputStream("./result/ngram/original.txt");
+        OutputStreamWriter ostream1 = new OutputStreamWriter(out1,"utf-8");
+        BufferedWriter bfw1 = new BufferedWriter(ostream1);      
+        
+        //writer 2 to output cover query 1
+        FileOutputStream out2 = new FileOutputStream("./result/ngram/cover1.txt");
+        OutputStreamWriter ostream2 = new OutputStreamWriter(out2,"utf-8");
+        BufferedWriter bfw2 = new BufferedWriter(ostream2);
+        
+        //writer 3 to output cover query 2
+        FileOutputStream out3 = new FileOutputStream("./result/ngram/cover2.txt");
+        OutputStreamWriter ostream3 = new OutputStreamWriter(out3,"utf-8");
+        BufferedWriter bfw3 = new BufferedWriter(ostream3);
+        
+        
+        //Process line, put probability into hashMap, and write results into file
         String line;
-        int c = 0;
-        
-        //Create output file if not exists.
-        File f = new File(output);
-        if(!f.exists()) {    
-            f.createNewFile();
-        } 
-        
-        FileOutputStream out = new FileOutputStream(f);
-        OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
-        BufferedWriter bfw = new BufferedWriter(ostream);      
-        
-        //process queries line by line
         while((line = bfr.readLine())!= null){
-            //find a key to use
-            String key="";
-            //get a usable key
-            
-            int i = 0; //counter to traverse keys dict
-            while(i<dict.size()){
-                //find an available key for this query
-                String[] entry = dict.get(i);
-                if(Integer.parseInt(entry[1])<100000){
-                    //Use the key 
-                    System.out.println(entry[0]+" "+entry[1]+" is in use");
-                    key = entry[0];
-                    //update the count in dict
-                    int newvalue = Integer.parseInt(entry[1]);
-                    newvalue --;
-                    entry[1] = Integer.toString(newvalue);
-                    break; //break out while loop
-                } else {
-                     i++; //This key is used up. go to next key.
+            lineContent = line.split(",");      
+            //Input the key and count into local dictionary
+            for(String s:lineContent) {
+            if(!dict.containsKey(s)) {
+                System.out.println(s);
+                String prob = getJointProbability(s,"e1ab23a3e8394363ac7b1df4e5fb4cac");
+                dict.put(s,Double.parseDouble(prob));
+                if(s.equals(lineContent[0])) {
+                    bfw1.write(s + ", " + prob);
+                    bfw1.newLine();
                 }
-             }          
-            //use the key to process the query
-            if(key.equals(""))
-                System.out.println("no key usable");
-            
-            //process query and update count for processed queries
-            String result = getJointProbability(line, key);
-            bfw.write(result);
-            bfw.newLine();
-            c++;
+                if(s.equals(lineContent[1])) {
+                    bfw2.write(s + ", " + prob);
+                    bfw2.newLine();
+                }
+                if(lineContent.length==2)
+                    break;
+                if(s.equals(lineContent[2])) {
+                    bfw3.write(s + ", " + prob);
+                    bfw3.newLine();
+                }
+            }
+            }   
         }
-      
-        bfw.close();
         bfr.close();
+        bfw1.close();
+        bfw2.close();
+        bfw3.close();
         
+    }
+     
+    public static void calc(String location) throws FileNotFoundException, UnsupportedEncodingException, IOException {
         
-        String result = Integer.toString(c);
-        System.out.println("A total of "+ result + " queries have been processed");
-        
-        //write back keys and counts
-        FileOutputStream kout = new FileOutputStream("./data/ngramKeys.txt");
-        OutputStreamWriter kostream = new OutputStreamWriter(kout,"utf-8");
-        BufferedWriter bfko = new BufferedWriter(kostream);
-        
-        for(String[] entry:dict){
-            //Write the updated results to file
-            bfko.write(entry[0] + " " + entry[1]);
-            bfko.newLine();
-        }
-        bfko.close();
-        
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
+        //import hashmap from properties
+        HashMap<String, Double> dict = new HashMap<String, Double>();
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("data.properties"));
 
-     }
-         
-     public static void calcDiff(String origin, String cover){
-        {
+        for (String key : properties.stringPropertyNames()) {
+            dict.put(key, (Double) properties.get(key));
+        }
         
-        //Create file reader
-        try{
-        FileInputStream in1 = new FileInputStream(origin);
-        InputStreamReader istream1 = new InputStreamReader(in1,"utf-8");
-        BufferedReader bfr1 = new BufferedReader(istream1);
-        
-        FileInputStream in2 = new FileInputStream(cover);
-        InputStreamReader istream2 = new InputStreamReader(in2,"utf-8");
-        BufferedReader bfr2 = new BufferedReader(istream2);
-        
-        String line1;
-        String line2;
-        int c = 0;
-        
-        //Write results to result.txt. Create file if not exists.
-        File f = new File("./result/ngram/Difference.txt");
-        if(!f.exists()) {    
-            f.createNewFile();
-        } 
-        
-        FileOutputStream out = new FileOutputStream(f);
-        OutputStreamWriter ostream = new OutputStreamWriter(out,"utf-8");
-        BufferedWriter bfw = new BufferedWriter(ostream);      
-        
-        while((line1 = bfr1.readLine())!= null && (line2 = bfr2.readLine())!= null){
-            double ori = Double.parseDouble(line1);
-            double cov = Double.parseDouble(line2);
-
-            double result = cov - ori;
-            bfw.write(Double.toString(result));
-            bfw.newLine();
-            c++;
+        String[] lineContent;
+        FileInputStream in = new FileInputStream(location);
+        InputStreamReader istream = new InputStreamReader(in,"utf-8");
+        BufferedReader bfr = new BufferedReader(istream);
             
-        }
-      
-        bfw.close();
-        bfr1.close();
-        bfr2.close();
+        //writerto output cover - original difference
+        FileOutputStream out1 = new FileOutputStream("./result/ngram/Result1.txt");
+        OutputStreamWriter ostream1 = new OutputStreamWriter(out1,"utf-8");
+        BufferedWriter bfw1 = new BufferedWriter(ostream1); 
         
-        String result = Integer.toString(c);
-        System.out.println("A total of "+ result + " rates have been processed");
+        //writer 2 to output cover query 2
+        FileOutputStream out2 = new FileOutputStream("./result/ngram/Result2.txt");
+        OutputStreamWriter ostream2 = new OutputStreamWriter(out2,"utf-8");
+        BufferedWriter bfw2 = new BufferedWriter(ostream2);
+        
+        
+        //Process line, put probability into hashMap, and write results into file
+        String line;
+        while((line = bfr.readLine())!= null){
+            lineContent = line.split(",");    
+            String origin = lineContent[0];
+            double valO = dict.get(origin);
+            String cover1 = lineContent[1];
+            double valC1 = dict.get(cover1);
+            double result1 = valC1 - valO;
+             
+            bfw1.write(Double.toString(result1));  
+            bfw1.newLine();
             
-        } catch(IOException e) {
-            e.printStackTrace();
+            if(lineContent.length==2)
+                    break;
+            String cover2 = lineContent[2];
+            double valC2 = dict.get(cover2);
+            double result2 = valC2 - valO;
+            
+            bfw2.write(Double.toString(result2));  
+            bfw2.newLine();
         }
-
-     }
+        bfw1.close();
+        bfw2.close();    
     }
      
      public static void main(String[] args) throws UnsupportedEncodingException, IOException{
-        WebLanguageModel weblm = new WebLanguageModel();
+     /*   WebLanguageModel weblm = new WebLanguageModel();
         //process file using the designated apiKey
         processFile("./data/ngramOrigin.txt","./result/ngram/ngramOHits.txt");
         processFile("./data/ngramCover.txt","./result/ngram/ngramCHits.txt");
         calcDiff("./result/ngram/ngramOHits.txt","./result/ngram/ngramCHits.txt");
-        
+*/
+      processQueries("./data/triQueries.txt");
+      //calc("./data/test.txt");
+      //calc("./data/triQueries.txt");
     }
     
 }

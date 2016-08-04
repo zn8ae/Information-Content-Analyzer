@@ -246,7 +246,7 @@ public class BingAPIAccess {
      }
     }
      
-   
+   /*
      public static void main(String[] args) {
          try {
              processFile("./data/original.txt","./result/ic/oHits.txt");
@@ -258,6 +258,7 @@ public class BingAPIAccess {
              Logger.getLogger(BingAPIAccess.class.getName()).log(Level.SEVERE, null, ex);
          }
      }
+     */
      
 }
 
